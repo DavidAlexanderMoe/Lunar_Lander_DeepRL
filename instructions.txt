@@ -4,3 +4,37 @@ To REMOVE
 https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master
 
 DEPENDENCIES
+
+
+
+
+
+
+
+The exam will involve two steps:
+1 The creation of a group project (each group consisting of 2 or 3 members),
+which must be submitted via email at least 4 days before the scheduled
+exam date in the form of a Python Notebook with commented
+instructions and results. Example: solving a Gymnasium environment (e.g.
+Pendolum, Atary Pong, etc.) with an RL algorithm seen in the course;
+2 An oral examination that will cover both the outcomes of the project
+(10/15 minutes presentation, no slides required) and theoretical aspects
+related to the course material;
+The group members are encouraged to take the exam in the same session
+(exceptions are allowed for extraordinary reasons).
+
+Project Code
+The submitted project should contain:
+a file named training.ipynb in which the training of the agent should be
+performed and described;
+a file named testing.ipynb in which the trained agent is tested and the
+performance are shown;
+a file named instructions.txt with the instructions and the requirements to
+run the code;
+all the required files which are necessary to reproduce the results;
+The instructor must be able to completely run both the training.ipynb and
+testing.ipynb from scratch.
+The project files must be submitted via email at andrea.pozzi@unicatt.it as one of
+the following two options:
+a .zip folder named LastnameFirstname.zip;
+a link to a GitHub repository;
