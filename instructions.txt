@@ -2,3 +2,5 @@ https://gymnasium.farama.org/environments/box2d/lunar_lander/
 
 To REMOVE
 https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master
+
+DEPENDENCIES
