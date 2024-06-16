@@ -10,7 +10,6 @@ DEPENDENCIES
 
 
 
-
 The exam will involve two steps:
 1 The creation of a group project (each group consisting of 2 or 3 members),
 which must be submitted via email at least 4 days before the scheduled
