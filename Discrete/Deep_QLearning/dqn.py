@@ -5,7 +5,6 @@ import numpy as np
 import random
 from collections import deque
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class QNet(nn.Module):
     '''
@@ -106,18 +105,25 @@ class QAgent:
         self.target_model.load_state_dict(target_state_dict)
     
 
-    def remember(self, state, action, reward, next_state, done):
+    def remember(self, 
+                 state, 
+                 action, 
+                 reward, 
+                 next_state, 
+                 done):
         """
         remember method for replay buffer memory
         """
         self.memory.append((state, action, reward, next_state, done))
     
 
-    def act(self, state, training=True):
+    def act(self, 
+            state, 
+            training=True):
         """
         act method for epsilon greedy policy
         """
-        state = torch.from_numpy(state).float().to(device)
+        state = torch.from_numpy(state).float().to(self.device)
         
         if np.random.rand() <= self.epsilon and training:
             return random.randrange(self.action_size)
@@ -126,7 +132,8 @@ class QAgent:
         return torch.argmax(act_values, dim=1).item()
     
 
-    def replay(self, batch_size):
+    def replay(self, 
+               batch_size: int):
         """
         A method to replay experiences stored in memory and update the Q-values of the model.
         
@@ -134,9 +141,9 @@ class QAgent:
         """
         minibatch = random.sample(self.memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
-            state = torch.from_numpy(state).float().to(device)
-            next_state = torch.from_numpy(next_state).float().to(device)
-            reward = torch.tensor(reward).float().to(device)
+            state = torch.from_numpy(state).float().to(self.device)
+            next_state = torch.from_numpy(next_state).float().to(self.device)
+            reward = torch.tensor(reward).float().to(self.device)
 
             # update Q value
             if done:
@@ -155,8 +162,34 @@ class QAgent:
                 self.epsilon *= self.epsilon_decay
 
 
-    def save_model(self, directory: str):
+    def save_model(self, 
+                   directory: str):
         torch.save(self.model.state_dict(), directory)
 
 
-    def training(self)
+    def training(self,
+                 env,
+                 batch_size: int,
+                 episodes: int,
+                 directory: str = 'Trained_Agents'):
+        """
+        method to train the agent.
+        this method outputs:
+            - a list of float numbers <- returns
+            - a list of integers <- steps
+        
+        :param env: The environment to train the agent in.
+        :param batch_size: The number of experiences to replay.
+        :param episodes: The number of episodes to train the agent for.
+        :param directory: The directory to save the trained agent in.
+        """
+
+        steps = []
+        returns = []
+
+        for episode in range(1, episodes + 1):
+            state, info = env.reset()
+            done = False
+            score = 0
+            while not done:
+                action = self.act(state)

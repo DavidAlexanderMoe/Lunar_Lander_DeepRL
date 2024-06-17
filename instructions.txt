@@ -1,5 +1,2 @@
 https://gymnasium.farama.org/environments/box2d/lunar_lander/
 https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master
-
-
-add dependecies pip freeze > requirements.txt 
