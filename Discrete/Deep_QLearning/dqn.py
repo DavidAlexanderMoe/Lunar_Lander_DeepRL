@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
+import os
 from collections import deque
 
 
@@ -82,7 +83,6 @@ class QAgent:
         # for training
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.returns = []
-        self.steps = []
 
         # Initialize neural networks
         self.model = QNet(state_size, action_size).to(self.device)
@@ -151,7 +151,7 @@ class QAgent:
             else:
                 y = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach a tensor from the computation graph
             
-            y_hat = self.model(state)[0][action]     # Q(s,a)
+            y_hat = self.model(state)[0][action]   # Q(s,a)
             loss = self.criterion(y, y_hat)
             self.optimizer.zero_grad()
             loss.backward()
@@ -171,25 +171,60 @@ class QAgent:
                  env,
                  batch_size: int,
                  episodes: int,
-                 directory: str = 'Trained_Agents'):
+                 directory: str = 'Trained_Agents') -> list[float]:
         """
         method to train the agent.
-        this method outputs:
-            - a list of float numbers <- returns
-            - a list of integers <- steps
+        this method outputs a list of float numbers <- returns
         
         :param env: The environment to train the agent in.
         :param batch_size: The number of experiences to replay.
         :param episodes: The number of episodes to train the agent for.
         :param directory: The directory to save the trained agent in.
         """
-
-        steps = []
-        returns = []
-
+        # episode loop
         for episode in range(1, episodes + 1):
             state, info = env.reset()
+            state = np.reshape(state, [1, self.state_size])
             done = False
-            score = 0
-            while not done:
+            truncated = False
+            episode_return = 0
+
+            # steps loop
+            while not (done | truncated):
+                # env render() # to see simulation
+
+                # Choose action
                 action = self.act(state)
+
+                # Take action
+                next_state, reward, done, truncated, info = env.step(action)
+                reward = reward if not done else -10.0
+                next_state = np.reshape(next_state, [1, self.state_size])
+
+                # Store transition (s,a,r,s') into memory
+                self.remember(state, action, reward, next_state, done)
+                
+                # Experience replay trick for convergence issues
+                if len(self.memory) > batch_size:
+                    self.replay()
+                    self.update_target_model()
+
+                # Update state
+                state = next_state
+
+                # Update episode variables
+                episode_return += reward
+
+            # Store episode returns
+            self.returns.append(episode_return)
+
+            # Print episode information
+            print(f'Episode {episode}/{episodes} - Reward: {episode_return:.2f} - Epsilon: {self.epsilon:.2f}')
+            
+            # Save checkpoint model
+            if episode % 700 == 0:
+                self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
+
+        # save the full model
+        self.save_model(os.path.join(directory, f'QAgent_final.pth'))
+        return self.returns
