@@ -21,10 +21,9 @@ class QNet(nn.Module):
             action_size (int): The size of the action.
         """
         super(QNet, self).__init__()
-        self.fc1 = nn.Linear(state_size, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, action_size)
+        self.fc1 = nn.Linear(state_size, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, action_size)
 
     def forward(self, x):
         """
@@ -40,8 +39,7 @@ class QNet(nn.Module):
         """
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = self.fc3(x)
         return x
     
 
@@ -77,7 +75,6 @@ class QAgent:
         # hyperparameters
         self.gamma = 0.99  # Discount factor
         self.learning_rate = 0.0005  # Learning rate used to update network
-        self.checkpoint_episode = 50  # Used to save network
         self.tau = 0.005  # TRICK 2 -> Tau=Beta used to update target network -> Beta of W_ = W_ + beta* (W - W_)
 
         # for training
@@ -101,7 +98,7 @@ class QAgent:
         state_dict = self.model.state_dict()
 
         for key in state_dict:
-            target_state_dict[key] = state_dict[key]*self.tau + target_state_dict[key]*(1-self.tau)
+            target_state_dict[key] = state_dict[key] * self.tau + target_state_dict[key] * (1 - self.tau)
         self.target_model.load_state_dict(target_state_dict)
     
 
@@ -123,13 +120,20 @@ class QAgent:
         """
         act method for epsilon greedy policy
         """
-        state = torch.from_numpy(state).float().to(self.device)
+        # torch.no_grad() for 3 reasons:
+            # Efficiency: Saves memory and computational resources by not calculating gradients.
+            # Inference Mode: Indicates that the operations within the block are for inference, not training.
+            # Gradient Isolation: Ensures that action selection doesn't affect the training process.
+        with torch.no_grad():
+            state = torch.from_numpy(state).float().to(self.device)
         
-        if np.random.rand() <= self.epsilon and training:
-            return random.randrange(self.action_size)
-        
-        act_values = self.model(state)
-        return torch.argmax(act_values, dim=1).item()
+            if np.random.rand() <= self.epsilon and training:
+                 # With probability epsilon, select a random action (exploration)
+                return random.randrange(self.action_size)
+            else:
+                # With probability 1-epsilon, select the action with the highest value (exploitation)
+                act_values = self.model(state)   # Perform a forward pass to get action values
+                return torch.argmax(act_values, dim=1).item()   # Select the action with the highest value and return it
     
 
     def replay(self, 
@@ -149,7 +153,7 @@ class QAgent:
             if done:
                 y = reward
             else:
-                y = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach a tensor from the computation graph
+                y = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach tensor from the computation graph
             
             y_hat = self.model(state)[0][action]   # Q(s,a)
             loss = self.criterion(y, y_hat)
@@ -159,7 +163,7 @@ class QAgent:
 
             # epsilon decay
             if self.epsilon > self.epsilon_min:
-                self.epsilon *= self.epsilon_decay
+                self.epsilon -= self.epsilon_decay
 
 
     def save_model(self, 
@@ -171,7 +175,7 @@ class QAgent:
                  env: gym.Env,
                  batch_size: int,
                  episodes: int,
-                 directory: str = 'G:\My Drive\PROJECTS\DeepRL\Lunar_Lander_DeepRL\Trained_Agents') -> list[float]:
+                 directory: str = '..\Trained_Agents') -> list[float]:
         """
         method to train the agent.
         this method outputs a list of float numbers <- returns
@@ -181,9 +185,11 @@ class QAgent:
         :param episodes: The number of episodes to train the agent for.
         :param directory: The directory to save the trained agent in.
         """
-        # Check if environment is not None
+        # Check if environment and directory are not None
         if env is None:
             raise ValueError("Environment cannot be None.")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
         # episode loop
         for episode in range(1, episodes + 1):
@@ -211,10 +217,8 @@ class QAgent:
                     self.replay(batch_size=batch_size)
                     self.update_target_model()
 
-                # Update state
+                # Update state and episode return
                 state = next_state
-
-                # Update episode variables
                 episode_return += reward
 
             # Store episode returns
@@ -224,7 +228,7 @@ class QAgent:
             print(f'Episode {episode}/{episodes} - Reward: {episode_return:.2f} - Epsilon: {self.epsilon:.2f}')
             
             # Save checkpoint model
-            if episode % 700 == 0:
+            if episode % 600 == 0:
                 self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
 
         # save the full model
