@@ -1,3 +1,12 @@
 # pip freeze > requirements.txt but overwrites currents
-gymnasium
-matplotlib
+# pip freeze | findstr package to find version
+gymnasium==0.29.1
+matplotlib==3.6.3
+matplotlib-inline==0.1.6
+pytorch-lightning==2.1.0
+torch==2.2.0
+torchaudio==2.2.0
+torchdata==0.7.0
+torchmetrics==1.2.0
+torchtext==0.16.0
+torchvision==0.17.0
