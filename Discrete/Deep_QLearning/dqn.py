@@ -4,6 +4,7 @@ import torch.optim as optim
 import numpy as np
 import random
 import os
+import gymnasium as gym
 from collections import deque
 
 
@@ -53,8 +54,7 @@ class QAgent:
                  action_size: int,
                  epsilon_decay: float,
                  epsilon_min: float,
-                 memory_size: int,
-                 ):
+                 memory_size: int):
         """
         :param state_size: environment state size.
         :param action_size: number of action in which we want to discretize the action space.
@@ -133,9 +133,9 @@ class QAgent:
     
 
     def replay(self, 
-               batch_size: int):
+               batch_size):
         """
-        A method to replay experiences stored in memory and update the Q-values of the model.
+        method to replay experiences stored in memory and update the Q-values of the model.
         
         :param batch_size: The number of experiences to replay.
         """
@@ -168,10 +168,10 @@ class QAgent:
 
 
     def training(self,
-                 env,
+                 env: gym.Env,
                  batch_size: int,
                  episodes: int,
-                 directory: str = 'Trained_Agents') -> list[float]:
+                 directory: str = 'G:\My Drive\PROJECTS\DeepRL\Lunar_Lander_DeepRL\Trained_Agents') -> list[float]:
         """
         method to train the agent.
         this method outputs a list of float numbers <- returns
@@ -181,9 +181,13 @@ class QAgent:
         :param episodes: The number of episodes to train the agent for.
         :param directory: The directory to save the trained agent in.
         """
+        # Check if environment is not None
+        if env is None:
+            raise ValueError("Environment cannot be None.")
+
         # episode loop
         for episode in range(1, episodes + 1):
-            state, info = env.reset()
+            state, _ = env.reset()
             state = np.reshape(state, [1, self.state_size])
             done = False
             truncated = False
@@ -191,22 +195,20 @@ class QAgent:
 
             # steps loop
             while not (done | truncated):
-                # env render() # to see simulation
-
                 # Choose action
                 action = self.act(state)
 
                 # Take action
-                next_state, reward, done, truncated, info = env.step(action)
-                reward = reward if not done else -10.0
+                next_state, reward, done, truncated, _ = env.step(action)
                 next_state = np.reshape(next_state, [1, self.state_size])
+                reward = reward if not done else -10.0
 
                 # Store transition (s,a,r,s') into memory
                 self.remember(state, action, reward, next_state, done)
                 
                 # Experience replay trick for convergence issues
                 if len(self.memory) > batch_size:
-                    self.replay()
+                    self.replay(batch_size=batch_size)
                     self.update_target_model()
 
                 # Update state
