@@ -10,3 +10,5 @@ torchdata==0.7.0
 torchmetrics==1.2.0
 torchtext==0.16.0
 torchvision==0.17.0
+numpy==1.23.5
+numpydoc==1.5.0
