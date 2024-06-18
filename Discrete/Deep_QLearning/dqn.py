@@ -58,7 +58,7 @@ class QAgent:
 
         # replay buffer memory
         # TRICK 1 -> add and remove from both ends is O(1), fixed size with automatic overflows, random access
-        self.memory = deque(maxlen=1_000_000)
+        self.memory = deque(maxlen=50_000)
 
         # epsilon
         self.epsilon = 1.0  # exploration rate
@@ -202,7 +202,7 @@ class QAgent:
                 state = next_state
 
                 if done:
-                    print(f"episode: {episode}/{episodes}, return: {episode_return}, epsilon: {self.epsilon:.2f}")
+                    print(f"DONE --> episode: {episode}/{episodes}, return: {episode_return}, epsilon: {self.epsilon:.2f}")
                     break
 
                 # Experience replay trick for convergence issues
@@ -212,9 +212,10 @@ class QAgent:
 
             # Store episode returns
             self.returns.append(episode_return)
+            print(f"episode: {episode}/{episodes}, return: {episode_return}, epsilon: {self.epsilon:.2f}")
             
             # Save checkpoint model
-            if episode % 300 == 0:
+            if episode % 100 == 0:
                 self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
 
         # save the full model and returns
