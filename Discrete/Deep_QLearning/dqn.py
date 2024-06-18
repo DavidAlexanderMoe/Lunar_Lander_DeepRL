@@ -45,9 +45,6 @@ class QNet(nn.Module):
 
 
 class QAgent:
-    '''
-    basically inspired by practical11_DQN.ipynb agent
-    '''
     def __init__(self,
                  environment: gym.Env):
         """
@@ -58,7 +55,7 @@ class QAgent:
 
         # replay buffer memory
         # TRICK 1 -> add and remove from both ends is O(1), fixed size with automatic overflows, random access
-        self.memory = deque(maxlen=50_000)
+        self.memory = deque(maxlen=20_000)
 
         # epsilon
         self.epsilon = 1.0  # exploration rate
@@ -74,11 +71,12 @@ class QAgent:
         # Initialize neural networks
         self.model = QNet(self.state_size, self.action_size).to(device)
         self.target_model = QNet(self.state_size, self.action_size).to(device)
-        self.update_target_model()  # Initialize target model weights to match model weights
+        self.target_model.load_state_dict(self.model.state_dict())  # Initialize target model weights to match model weights
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
 
         self.returns = []
+        self.avg_scores_array = []
 
     def update_target_model(self):
         """
@@ -116,7 +114,7 @@ class QAgent:
                 return random.randrange(self.action_size)
             
             # With probability 1-epsilon, select the action with the highest value (exploitation)
-            act_values = self.model(state)                  # Perform a forward pass to get action values
+            act_values = self.model(state)                  # Perform a forward pass to get (state, action) values for every action
             return torch.argmax(act_values, dim=1).item()   # Select the action with the highest value and return it
     
 
@@ -133,14 +131,18 @@ class QAgent:
             next_state = torch.from_numpy(next_state).float().to(device)
             reward = torch.tensor(reward).float().to(device)
 
-            # update Q value
+            # update target U for backprop
             if done:
                 target = reward
             else:
                 target = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach a tensor from the computation graph
             
             Q_sa = self.model(state)[0][action]
-
+            # self.model(state) outputs a (1 x action size) matrix (since it is a for loop)
+            # otherwise it would output a batch_size x action size matrix
+            # you select the first and only sublist 
+            # and then [action] is used to select the estimated state-action value for the current action -> Q value for that (s,a) pair
+            
             # loss backprop
             loss = self.criterion(target, Q_sa)
             self.optimizer.zero_grad()
@@ -162,6 +164,7 @@ class QAgent:
                  env: gym.Env,
                  batch_size: int,
                  episodes: int,
+                 steps: int = 1000,
                  directory: str = '..\Trained_Agents') -> list[float]:
         """
         method to train the agent.
@@ -178,22 +181,28 @@ class QAgent:
         if not os.path.exists(os.path.join(directory, f'returns')):
             os.makedirs(os.path.join(directory, f'returns'))
 
+        tot_reward = 0
+        
         # episode loop
         for episode in range(1, episodes + 1):
             state, _ = env.reset()
             state = np.reshape(state, [1, self.state_size])
 
+            done = False
+
             # steps loop
-            for episode_return in range(500):
+            while not done:
                 # env.render()
 
                 # Choose action
                 action = self.act(state)
 
                 # Take action
-                next_state, reward, done, _, info = env.step(action)
-                reward = reward if not done else -10.0
+                next_state, reward, done, _, _ = env.step(action)
                 next_state = np.reshape(next_state, [1, self.state_size])
+
+                # reward declaration
+                tot_reward += reward
 
                 # Store transition (s,a,r,s') into memory
                 self.remember(state, action, reward, next_state, done)
@@ -202,7 +211,8 @@ class QAgent:
                 state = next_state
 
                 if done:
-                    print(f"DONE --> episode: {episode}/{episodes}, return: {episode_return}, epsilon: {self.epsilon:.2f}")
+                    reward = -1
+                    print(f"episode: {episode}/{episodes}, return: {tot_reward}, epsilon: {self.epsilon:.2f}")
                     break
 
                 # Experience replay trick for convergence issues
@@ -211,15 +221,17 @@ class QAgent:
                     self.update_target_model()
 
             # Store episode returns
-            self.returns.append(episode_return)
-            print(f"episode: {episode}/{episodes}, return: {episode_return}, epsilon: {self.epsilon:.2f}")
+            self.returns.append(tot_reward)
+            avg_score = np.mean(self.returns)
+            self.avg_scores_array.append(avg_score)
             
             # Save checkpoint model
-            if episode % 100 == 0:
+            if episode % 500 == 0:
                 self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
 
         # save the full model and returns
         np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
+        np.save(os.path.join(directory, f'returns\QAgent_avg_scores_array.npy'), np.array(self.avg_scores_array))
         self.save_model(os.path.join(directory, f'QAgent_final.pth'))
         return self.returns
     
