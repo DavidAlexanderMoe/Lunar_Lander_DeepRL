@@ -140,9 +140,9 @@ class QAgent:
                 target = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach a tensor from the computation graph
             
             Q_sa = self.model(state)[0][action]
-            # self.model(state) outputs a (1 x action size) matrix (since it is a for loop)
+            # self.model(state) outputs a (1 x action size) matrix (since it is a for loop on a single transition in the minibatch)
             # otherwise it would output a batch_size x action size matrix
-            # you select the first and only sublist 
+            # you then select the first and only sublist with [0]
             # and then [action] is used to select the estimated state-action value for the current action -> Q value for that (s,a) pair
             
             # loss backprop
@@ -159,6 +159,13 @@ class QAgent:
     def save_model(self, 
                    directory: str):
         torch.save(self.model.state_dict(), directory)
+
+
+    def load(self, filename):
+        """
+        Load the model state dictionary from a specified file.
+        """
+        self.model.load_state_dict(torch.load(f'..\\Trained_Agents\\{filename}_final.pth'))
 
 
     def training(self,
@@ -238,13 +245,6 @@ class QAgent:
         self.save_model(os.path.join(directory, f'QAgent_final.pth'))
         return self.returns
     
-
-    def load(self, filename):
-        """
-        Load the model state dictionary from a specified file.
-        """
-        self.model.load_state_dict(torch.load(f'..\\Trained_Agents\\{filename}_final.pth'))
-
     
     def testing(self, 
                 env: gym.Env, 
