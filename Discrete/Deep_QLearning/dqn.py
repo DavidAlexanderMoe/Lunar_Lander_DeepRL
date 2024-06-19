@@ -4,6 +4,7 @@ import torch.optim as optim
 import numpy as np
 import random
 import os
+import time
 import gymnasium as gym
 from collections import deque
 
@@ -59,24 +60,25 @@ class QAgent:
 
         # epsilon
         self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.01
         self.epsilon_decay = 0.998
 
         # hyperparameters
-        self.gamma = 0.99  # Discount factor
-        self.learning_rate = 0.0005  # Learning rate used to update network
-        self.tau = 0.005  # TRICK 2 -> Tau=Beta used to update target network -> Beta of W_ = W_ + beta* (W - W_)
+        self.gamma = 0.99               # Discount factor
+        self.learning_rate = 0.0005     # Learning rate used to update network
+        self.tau = 0.005                # TRICK 2 -> Tau=Beta used to update target network -> Beta of W_ = W_ + beta* (W - W_)
         self.checkpoint_episode = 20
 
         # Initialize neural networks
         self.model = QNet(self.state_size, self.action_size).to(device)
         self.target_model = QNet(self.state_size, self.action_size).to(device)
-        self.target_model.load_state_dict(self.model.state_dict())  # Initialize target model weights to match model weights
+        self.target_model.load_state_dict(self.model.state_dict())       # Initialize target model weights to match model weights
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
 
         self.returns = []
         self.avg_scores_array = []
+        self.tot_steps = []
 
     def update_target_model(self):
         """
@@ -180,15 +182,15 @@ class QAgent:
         #     os.makedirs(directory)
         if not os.path.exists(os.path.join(directory, f'returns')):
             os.makedirs(os.path.join(directory, f'returns'))
-
-        tot_reward = 0
         
         # episode loop
         for episode in range(1, episodes + 1):
+            done = False
+            tot_reward = 0
+            steps =  0
+            
             state, _ = env.reset()
             state = np.reshape(state, [1, self.state_size])
-
-            done = False
 
             # steps loop
             while not done:
@@ -201,8 +203,9 @@ class QAgent:
                 next_state, reward, done, _, _ = env.step(action)
                 next_state = np.reshape(next_state, [1, self.state_size])
 
-                # reward declaration
+                # cumulative reward and steps
                 tot_reward += reward
+                steps += 1
 
                 # Store transition (s,a,r,s') into memory
                 self.remember(state, action, reward, next_state, done)
@@ -212,7 +215,7 @@ class QAgent:
 
                 if done:
                     reward = -1
-                    print(f"episode: {episode}/{episodes}, return: {tot_reward}, epsilon: {self.epsilon:.2f}")
+                    print(f"episode: {episode}/{episodes}, return: {tot_reward}, epsilon: {self.epsilon:.2f}, steps: {steps}")
                     break
 
                 # Experience replay trick for convergence issues
@@ -224,6 +227,7 @@ class QAgent:
             self.returns.append(tot_reward)
             avg_score = np.mean(self.returns)
             self.avg_scores_array.append(avg_score)
+            self.tot_steps(steps)
             
             # Save checkpoint model
             if episode % 500 == 0:
@@ -235,3 +239,44 @@ class QAgent:
         self.save_model(os.path.join(directory, f'QAgent_final.pth'))
         return self.returns
     
+
+    def load(self, filename):
+        self.model.load_state_dict(torch.load(f'..\\Trained_Agents\\{filename}_final.pth'))
+
+    
+    def testing(self, 
+                env: gym.Env, 
+                episodes: int):
+        state, _ = env.reset()
+        scores_deque = deque(maxlen=100)
+
+        for i_episode in range(1, episodes + 1):
+            state, _ = env.reset()
+            state = np.reshape(state, [1, self.state_size])
+
+            total_reward = 0
+            time_start = time.time()
+            timesteps =  0
+
+            while True:
+                env.render()
+
+                action = self.act(state, training=False)
+
+                next_state, reward, done, _, _ = env.step(action)
+                next_state = np.reshape(next_state, [1, self.state_size])
+
+                state = next_state
+                total_reward += reward
+                timesteps += 1
+
+                if done:
+                    break 
+
+            delta = (int)(time.time() - time_start)
+
+            scores_deque.append(total_reward)
+
+            print('Episode {}\tAverage Score: {:.2f}, \t Timesteps: {} \tTime: {:02}:{:02}:{:02}'\
+                      .format(i_episode, np.mean(scores_deque), timesteps,\
+                              delta//3600, delta%3600//60, delta%60))
