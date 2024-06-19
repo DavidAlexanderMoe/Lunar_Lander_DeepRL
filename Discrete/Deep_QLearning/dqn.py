@@ -214,7 +214,7 @@ class QAgent:
 
                 if done:
                     reward = -1
-                    print(f"episode: {episode}/{episodes}, return: {tot_reward}, epsilon: {self.epsilon:.2f}, steps: {steps}")
+                    print(f"episode: {episode}/{episodes}, return: {round(tot_reward)}, epsilon: {self.epsilon:.2f}, steps: {steps}")
                     break
 
                 # Experience replay trick for convergence issues
