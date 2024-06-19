@@ -161,7 +161,6 @@ class QAgent:
         torch.save(self.model.state_dict(), directory)
 
 
-
     def training(self,
                  env: gym.Env,
                  batch_size: int,
@@ -241,12 +240,22 @@ class QAgent:
     
 
     def load(self, filename):
+        """
+        Load the model state dictionary from a specified file.
+        """
         self.model.load_state_dict(torch.load(f'..\\Trained_Agents\\{filename}_final.pth'))
 
     
     def testing(self, 
                 env: gym.Env, 
                 episodes: int):
+        """
+        Test the DQN model on a given Gym environment for a specified number of episodes.
+
+        Args:
+            env (gym.Env): The Gym environment to test the model on.
+            episodes (int): The number of episodes to test the model.
+        """
         state, _ = env.reset()
         scores_deque = deque(maxlen=100)
 
