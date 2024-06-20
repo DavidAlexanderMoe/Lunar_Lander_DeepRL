@@ -231,7 +231,6 @@ class QAgent:
                 # Experience replay trick for convergence issues
                 if len(self.memory) > batch_size:
                     self.replay(batch_size=batch_size)
-                    # self.replay(batch_size=batch_size)
                     self.update_target_model()
 
             # Store episode returns
