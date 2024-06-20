@@ -78,7 +78,7 @@ class QAgent:
 
         self.returns = []
         self.avg_scores_array = []
-        self.tot_steps = []
+        self.steps_per_episode = {}
 
     def update_target_model(self):
         """
@@ -124,6 +124,9 @@ class QAgent:
         """
         method to replay experiences stored in memory and update the Q-values of the model.
         
+        In Q-learning, the target value is based on the maximum Q-value of the next state, (off-policy control)
+        while in SARSA (on-policy control), the target value is based on the Q-value of the next state-action pair actually taken by the agent.
+        
         :param batch_size: The number of experiences to replay.
         """
         minibatch = random.sample(self.memory, batch_size)
@@ -133,10 +136,11 @@ class QAgent:
             next_state = torch.from_numpy(next_state).float().to(device)
             reward = torch.tensor(reward).float().to(device)
 
-            # update target U for backprop
+            # Update target U for backprop
             if done:
                 target = reward
             else:
+                # Q-learning update
                 target = reward + self.gamma * torch.max(self.target_model(next_state).detach()) # detach a tensor from the computation graph
             
             Q_sa = self.model(state)[0][action]
@@ -227,13 +231,15 @@ class QAgent:
                 # Experience replay trick for convergence issues
                 if len(self.memory) > batch_size:
                     self.replay(batch_size=batch_size)
+                    # self.replay(batch_size=batch_size)
                     self.update_target_model()
 
             # Store episode returns
             self.returns.append(tot_reward)
             avg_score = np.mean(self.returns)
             self.avg_scores_array.append(avg_score)
-            self.tot_steps(steps)
+            # store steps in a dictionary {episode: steps} and return it
+            self.steps_per_episode[episode] = steps
             
             # Save checkpoint model
             if episode % 500 == 0:
@@ -243,7 +249,7 @@ class QAgent:
         np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
         np.save(os.path.join(directory, f'returns\QAgent_avg_scores_array.npy'), np.array(self.avg_scores_array))
         self.save_model(os.path.join(directory, f'QAgent_final.pth'))
-        return self.returns
+        return self.returns, self.steps_per_episode
     
     
     def testing(self, 
@@ -289,3 +295,5 @@ class QAgent:
             print('Episode {}\tAverage Score: {:.2f}, \t Timesteps: {} \tTime: {:02}:{:02}:{:02}'\
                       .format(i_episode, np.mean(scores_deque), timesteps,\
                               delta//3600, delta%3600//60, delta%60))
+            
+            
