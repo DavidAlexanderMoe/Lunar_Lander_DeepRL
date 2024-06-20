@@ -240,6 +240,14 @@ class QAgent:
             # store steps in a dictionary {episode: steps} and return it
             self.steps_per_episode[episode] = steps
             
+            if episode % 100 == 0:
+                if avg_score >= 200:
+                    print(f"Environment solved in {episode} episodes")
+                    np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
+                    np.save(os.path.join(directory, f'returns\QAgent_avg_scores_array.npy'), np.array(self.avg_scores_array))
+                    self.save_model(os.path.join(directory, f'QAgent_final.pth'))
+                    return self.returns, self.steps_per_episode
+            
             # Save checkpoint model
             if episode % 500 == 0:
                 self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
