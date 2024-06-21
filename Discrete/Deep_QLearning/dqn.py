@@ -247,7 +247,7 @@ class QAgent:
 
             # Environment solved when reward reaches threshold=200
             if avg_score >= self.threshold:
-                    print(f"Environment solved in {episode} episodes")
+                    print(f"Environment solved in {episode} episodes. Average score: {avg_score:.2f}")
                     np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
                     self.save_model(os.path.join(directory, f'QAgent_final.pth'))
                     return self.returns, self.steps_per_episode
