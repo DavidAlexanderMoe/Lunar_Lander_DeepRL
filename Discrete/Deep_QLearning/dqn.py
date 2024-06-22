@@ -54,6 +54,7 @@ class QAgent:
         self.state_size = environment.observation_space.shape[0]
         self.action_size = environment.action_space.n
         self.threshold = environment.spec.reward_threshold
+        self.name = 'DQN'
 
         # replay buffer memory
         # TRICK 1 -> add and remove from both ends is O(1), fixed size with automatic overflows, random access
@@ -243,18 +244,18 @@ class QAgent:
             
             # Save checkpoint model
             if episode % 500 == 0:
-                self.save_model(os.path.join(directory, f'QAgent_ep{episode}.pth'))
+                self.save_model(os.path.join(directory, f'{self.name}_Agent_ep{episode}.pth'))
 
             # Environment solved when reward reaches threshold=200
             if avg_score >= self.threshold:
                     print(f"Environment solved in {episode} episodes. Average score: {avg_score:.2f}")
-                    np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
-                    self.save_model(os.path.join(directory, f'QAgent_final.pth'))
+                    np.save(os.path.join(directory, f'returns\{self.name}_Agent_returns.npy'), np.array(self.returns))
+                    self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
                     return self.returns, self.steps_per_episode
             
         # save the full model and returns
-        # np.save(os.path.join(directory, f'returns\QAgent_returns.npy'), np.array(self.returns))
-        # self.save_model(os.path.join(directory, f'QAgent_final.pth'))
+        np.save(os.path.join(directory, f'returns\{self.name}_Agent_returns.npy'), np.array(self.returns))
+        self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
         return self.returns, self.steps_per_episode
     
     
@@ -268,7 +269,6 @@ class QAgent:
             env (gym.Env): The Gym environment to test the model on.
             episodes (int): The number of episodes to test the model.
         """
-        state, _ = env.reset()
         scores_deque = deque(maxlen=100)
 
         for i_episode in range(1, episodes + 1):
