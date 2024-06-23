@@ -20,11 +20,27 @@ class ActorNet(nn.Module):
         return F.softmax(self.output(x),dim=-1) #-1 to take softmax of last dimension
     
 
+class ValueFunctionNet(nn.Module):
+    def __init__(self, state_size, hidden_size):
+        super(ValueFunctionNet, self).__init__()
+        self.dense_layer_1 = nn.Linear(state_size, hidden_size)
+        self.dense_layer_2 = nn.Linear(hidden_size, hidden_size)
+        self.output = nn.Linear(hidden_size, 1)
+    
+    def forward(self, x):
+        x = torch.clamp(x,-1.1,1.1)
+        x = F.relu(self.dense_layer_1(x))
+        x = F.relu(self.dense_layer_2(x))
+        return self.output(x)
+    
+
 class PGAgent():
-    def __init__(self, state_size, action_size, hidden_size, learning_rate, discount ):
+    def __init__(self, state_size, action_size, hidden_size, actor_lr, vf_lr, discount):
         self.action_size = action_size
         self.actor_net = ActorNet(state_size, action_size, hidden_size).to(device)
-        self.optimizer = optim.Adam(self.actor_net.parameters(), lr=learning_rate)
+        self.vf_net = ValueFunctionNet(state_size, hidden_size).to(device)
+        self.actor_optimizer = optim.Adam(self.actor_net.parameters(), lr=actor_lr)
+        self.vf_optimizer = optim.Adam(self.vf_net.parameters(), lr=vf_lr)
         self.discount = discount
         
     def select_action(self, state):
@@ -52,10 +68,26 @@ class PGAgent():
         action_t = torch.LongTensor(action_list).to(device).view(-1,1)
         return_t = torch.FloatTensor(return_array).to(device).view(-1,1)
         
+        # get value function estimates
+        vf_t = self.vf_net(state_t).to(device)
+        with torch.no_grad():
+            advantage_t = return_t - vf_t
+        
+        # calculate actor loss
         selected_action_prob = self.actor_net(state_t).gather(1, action_t)
-        loss = torch.mean(-torch.log(selected_action_prob) * return_t)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step() 
+        # REINFORCE loss:
+        #actor_loss = torch.mean(-torch.log(selected_action_prob) * return_t)
+        # REINFORCE Baseline loss:
+        actor_loss = torch.mean(-torch.log(selected_action_prob) * advantage_t)
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step() 
 
-        return loss.detach().cpu().numpy()
+        # calculate vf loss
+        loss_fn = nn.MSELoss()
+        vf_loss = loss_fn(vf_t, return_t)
+        self.vf_optimizer.zero_grad()
+        vf_loss.backward()
+        self.vf_optimizer.step() 
+        
+        return actor_loss.detach().cpu().numpy(), vf_loss.detach().cpu().numpy()
