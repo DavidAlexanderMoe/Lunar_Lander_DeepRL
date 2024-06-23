@@ -174,7 +174,7 @@ class QAgent:
         """
         Load the model state dictionary from a specified file.
         """
-        self.model.load_state_dict(torch.load(f'..\\Trained_Agents\\{filename}_final.pth'))
+        self.model.load_state_dict(torch.load(f'Trained_Agents/{filename}_Agent_final.pth'))
 
 
     def training(self,
@@ -182,7 +182,7 @@ class QAgent:
                  batch_size: int,
                  episodes: int,
                  steps: int = 1000,
-                 directory: str = '..\Trained_Agents') -> list[float]:
+                 directory: str = '\Trained_Agents') -> list[float]:
         """
         method to train the agent.
         this method outputs a list of float numbers <- returns
@@ -257,8 +257,8 @@ class QAgent:
                     return self.returns, self.steps_per_episode
             
         # save the full model and returns
-        np.save(os.path.join(directory, f'returns\{self.name}_Agent_returns.npy'), np.array(self.returns))
-        self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
+        np.save(os.path.join(directory, f'Trained_Agents/{self.name}_Agent_returns.npy'), np.array(self.returns))
+        self.save_model(os.path.join(directory, f'Trained_Agents/{self.name}_Agent_final.pth'))
         return self.returns, self.steps_per_episode
     
     

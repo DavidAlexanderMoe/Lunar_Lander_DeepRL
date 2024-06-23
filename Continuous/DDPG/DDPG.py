@@ -15,6 +15,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # DDPG can be (it is here) off-policy and combines some methods used for DQN like target network updating and an experience replay buffer. 
 # Unlike DQN, DDPG can be used in the continuous action space.
 
+# create replay buffer of tuples of (state, next_state, action, reward, done)
+class ReplayBuffer():
+    def __init__(self, max_size=1e6):
+        self.storage = []
+        self.max_size = max_size
+        self.ptr = 0
+
+    def add(self, data):
+        if len(self.storage) == self.max_size:
+            self.storage[int(self.ptr)] = data
+            self.ptr = (self.ptr + 1) % self.max_size
+        else:
+            self.storage.append(data)
+
+    def sample(self, batch_size):
+        ind = np.random.randint(0, len(self.storage), size=batch_size)
+        state, next_state, action, reward, done = [], [], [], [], []
+
+        for i in ind: 
+            X, Y, U, R, D = self.storage[i]
+            state.append(np.array(X, copy=False))
+            next_state.append(np.array(Y, copy=False))
+            action.append(np.array(U, copy=False))
+            reward.append(np.array(R, copy=False))
+            done.append(np.array(D, copy=False))
+
+        return np.array(state), np.array(next_state), np.array(action), np.array(reward).reshape(-1,1), np.array(done).reshape(-1,1)
+
 
 class ActorNet(nn.Module):
     def __init__(self, state_size, action_size, hidden_size):
@@ -121,7 +149,7 @@ class DDPGAgent():
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=critic_lr)
         
         # replay buffer memory
-        self.memory = deque(maxlen=50_000)
+        # self.memory = deque(maxlen=50_000)
         
     def act(self, state):
         #get action probs then randomly sample from the probabilities
@@ -135,13 +163,15 @@ class DDPGAgent():
         return action
 
     
-    def train(self, batch_size):
+    def train(self, replay_buffer, batch_size):
         '''
         Algorithm: https://spinningup.openai.com/en/latest/algorithms/ddpg.html
         '''
         # sample a batch from the replay buffer
-        minibatch = random.sample(self.memory, batch_size)        # state, next_state, action, reward, done = replay_buffer.sample(batch_size)
-        state, action, reward, next_state, done = zip(*minibatch)
+        # minibatch = random.sample(self.memory, batch_size)        # state, next_state, action, reward, done = replay_buffer.sample(batch_size)
+        # state, action, reward, next_state, done = zip(*minibatch)
+        
+        state, next_state, action, reward, done = replay_buffer.sample(batch_size)
         
         # preprocess to turn batches into tensors and use GPU if available
         state = torch.FloatTensor(state).to(device)
@@ -165,8 +195,8 @@ class DDPGAgent():
         Q = self.critic(state, action).view(batch_size,-1)
         
         # train critic with backprop
-        critic_loss = F.smooth_l1_loss(Q, y)
-        # critic_loss = self.criterion(Q, y)   # MSE Loss
+        # critic_loss = F.smooth_l1_loss(Q, y)
+        critic_loss = self.criterion(Q, y)   # MSE Loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()         # update w
