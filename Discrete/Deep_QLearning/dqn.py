@@ -39,6 +39,7 @@ class QNet(nn.Module):
 
         This method takes an input tensor `x` of shape (batch_size, state_size) and performs a forward pass through the neural network. It applies the ReLU activation function to each layer and returns the output tensor of shape (batch_size, action_size).
         """
+        # x = torch.clamp(x,-1.1,1.1)   # for stablizing the learning
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         return self.fc3(x)
