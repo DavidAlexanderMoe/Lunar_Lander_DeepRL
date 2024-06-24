@@ -1,2 +1,9 @@
-https://gymnasium.farama.org/environments/box2d/lunar_lander/
-https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master
+Solving the Lunar Lander Environment (OpenAI Environment) with Deep Reinforcement Learning:
+
+DLA Project by Riccardo Borgo, David Moe, and Tommaso Grandi.
+
+Files:
+1 - requirements.txt to check and eventually install the required dependecies to run the codes
+2 - Lunar_Lander_Environment.ipynb ---> Environment inspection for the Lunar Lander Environments (both dicrete and continuous)
+3 - DQN and REINFORCE + Baseline algorithms to solve the discrete version of the Environment, along with py files for netwoks and agents, as well as training and testing notebooks.
+4 - DDPG algorithm to solve the continuous version of the Environment, along with py file for netwoks and agent, as well as training and testing notebooks.
