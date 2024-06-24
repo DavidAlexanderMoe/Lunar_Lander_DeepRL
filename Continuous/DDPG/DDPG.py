@@ -125,18 +125,19 @@ class DDPGAgent():
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         
-    def act(self, state):
+    def act(self, state, add_noise=True):
         #get action probs then randomly sample from the probabilities
         with torch.no_grad():
             input_state = torch.FloatTensor(state).to(device)
             action = self.actor(input_state)              # get action from actor and preprocessed input state
             action = action.detach().cpu().numpy()        # detach and turn to numpy to use with np.random.choice()
 
-            # add exploration noise to action 
-            noise = np.random.normal(0., self.exploration_noise, size=self.action_size)
-            action = (action + noise).clip(self.min_action, self.max_action)
-            # in DDPG add noise for exploration as sigma = degree of exploration, then clip the resulting distribution to the min and max action
-            # to ensure that the action space is between the range of possible actions in the environment 
+            if add_noise:
+                # add exploration noise to action 
+                noise = np.random.normal(0., self.exploration_noise, size=self.action_size)
+                action = (action + noise).clip(self.min_action, self.max_action)
+                # in DDPG add noise for exploration as sigma = degree of exploration, then clip the resulting distribution to the min and max action
+                # to ensure that the action space is between the range of possible actions in the environment 
         return action
 
     
