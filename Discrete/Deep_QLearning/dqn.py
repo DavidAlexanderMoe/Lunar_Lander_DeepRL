@@ -209,6 +209,9 @@ class QAgent:
                 # cumulative reward and steps
                 tot_reward += reward
                 steps += 1
+                # end episode early
+                if tot_reward < -250:
+                    done = 1
 
                 # Store transition (s,a,r,s') into memory
                 self.remember(state, action, reward, next_state, done)
@@ -238,10 +241,8 @@ class QAgent:
                 self.save_model(os.path.join(directory, f'{self.name}_Agent_ep{episode}.pth'))
 
             # Environment solved when reward reaches threshold
-            if np.mean(self.returns[-5:]) >= self.threshold - 5:
-                    print(f"Environment solved in {episode} episodes. Average score: {avg_score:.2f}")
-                    np.save(os.path.join(directory, f'returns\{self.name}_Agent_returns.npy'), np.array(self.returns))
-                    self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
+            if np.mean(self.returns[-10:]) >= self.threshold - 5:
+                    print(f"Environment solved in {episode} episodes. Average score on last 10 episodes: {np.mean(self.returns[-10:]):.2f}")
                     return self.returns, self.steps_per_episode
             
         return self.returns, self.steps_per_episode
