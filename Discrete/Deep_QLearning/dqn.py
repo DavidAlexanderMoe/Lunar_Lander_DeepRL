@@ -165,18 +165,6 @@ class QAgent:
             self.epsilon *= self.epsilon_decay
 
 
-    def save_model(self, 
-                   directory: str):
-        torch.save(self.model.state_dict(), directory)
-
-
-    def load(self, filename):
-        """
-        Load the model state dictionary from a specified file.
-        """
-        self.model.load_state_dict(torch.load(f'Trained_Agents/{filename}_Agent_final.pth'))
-
-
     def training(self,
                  env: gym.Env,
                  batch_size: int,
@@ -256,9 +244,6 @@ class QAgent:
                     self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
                     return self.returns, self.steps_per_episode
             
-        # save the full model and returns
-        np.save(os.path.join(directory, f'Trained_Agents/{self.name}_Agent_returns.npy'), np.array(self.returns))
-        self.save_model(os.path.join(directory, f'Trained_Agents/{self.name}_Agent_final.pth'))
         return self.returns, self.steps_per_episode
     
     
@@ -272,7 +257,6 @@ class QAgent:
             env (gym.Env): The Gym environment to test the model on.
             episodes (int): The number of episodes to test the model.
         """
-        scores_deque = deque(maxlen=100)
 
         for i_episode in range(1, episodes + 1):
             state, _ = env.reset()
@@ -299,10 +283,7 @@ class QAgent:
 
             delta = (int)(time.time() - time_start)
 
-            scores_deque.append(total_reward)
-
-            print('Episode {}\tAverage Score: {:.2f}, \t Timesteps: {} \tTime: {:02}:{:02}:{:02}'\
-                      .format(i_episode, np.mean(scores_deque), timesteps,\
-                              delta//3600, delta%3600//60, delta%60))
-            
+            print('Episode {}\tScore: {:.2f} \tTimesteps: {} \tTime: {:02}:{:02}:{:02}'\
+                      .format(i_episode, total_reward, timesteps,\
+                              delta//3600, delta%3600//60, delta%60))            
             
