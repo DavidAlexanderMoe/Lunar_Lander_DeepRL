@@ -60,7 +60,7 @@ class MCPGAgent():
         """
         # get action probs then randomly sample from the probabilities
         with torch.no_grad():
-            input_state = torch.FloatTensor(state).to(device)       
+            input_state = torch.FloatTensor(state).to(device)
             # input_state = torch.from_numpy(state).float().to(device)
             action_probs = self.actor_net(input_state).detach().cpu().numpy()
             # detach and turn to numpy to use with np.random.choice() with the probabilities
