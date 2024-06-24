@@ -237,8 +237,8 @@ class QAgent:
             if episode % 500 == 0:
                 self.save_model(os.path.join(directory, f'{self.name}_Agent_ep{episode}.pth'))
 
-            # Environment solved when reward reaches threshold=200
-            if avg_score >= self.threshold:
+            # Environment solved when reward reaches threshold
+            if np.mean(self.returns[-5:]) >= self.threshold - 5:
                     print(f"Environment solved in {episode} episodes. Average score: {avg_score:.2f}")
                     np.save(os.path.join(directory, f'returns\{self.name}_Agent_returns.npy'), np.array(self.returns))
                     self.save_model(os.path.join(directory, f'{self.name}_Agent_final.pth'))
