@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 import random
 from collections import deque
-from memory import MemoryBuffer
 
 # check and use GPU if available if not use CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -87,6 +86,10 @@ class CriticNet(nn.Module):
         then the resulting tensor will have a shape of (batch_size, state_size + action_size).
         This is done in the Critic network to combine the state and action information into a single input vector, 
         which can then be processed by the network to estimate the Q-value of the state-action pair.
+
+        Inputs: (in batches)
+            x (torch.Tensor): The current state of the environment.
+            a (torch.Tensor): The action taken in that state.
         '''
         x = torch.clamp(x,-1.1,1.1)
         x = F.relu(self.dense_layer_1(torch.cat((x,a),dim=1)))
@@ -180,8 +183,7 @@ class DDPGAgent():
         
         # train actor with backprop
         train_action = self.actor(state)
-        # loss taken from https://proceedings.mlr.press/v32/silver14.pdf
-        actor_loss = -torch.mean(self.critic(state, train_action))      # -1 * Q_train(s, mu(s,θ))
+        actor_loss = -torch.mean(self.critic(state, train_action))      # - 1 / Batch size * sum_over_states (Q_train(s, mu(s,θ)))
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()          # update θ
