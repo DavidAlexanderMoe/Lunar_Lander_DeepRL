@@ -48,7 +48,8 @@ class QNet(nn.Module):
 
 class QAgent:
     '''
-    Heavily inspired by Practical11_DQN.ipynb'''
+    Heavily inspired by Practical11_DQN.ipynb
+    '''
     def __init__(self,
                  environment: gym.Env):
         """
