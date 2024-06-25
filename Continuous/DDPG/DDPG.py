@@ -190,7 +190,9 @@ class DDPGAgent():
         
     
     def update_target_network_soft(self, num_iter, update_tau=0.001):
-        # soft target network update: update target networks with mixture of train and target
+        # soft target network update: update target networks with tau * current networks + (1 - tau) * target networks
+        # this helps to reduce the oscillations that can occur when the target network is updated too quickly
+        # which can lead to unstable learning.
         if num_iter % 1 == 0:       # update at each iteration (1)
             for target_var, var in zip(self.critic_target.parameters(), self.critic.parameters()):
                 target_var.data.copy_((1.-update_tau) * target_var.data + (update_tau) * var.data)
