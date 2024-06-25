@@ -173,11 +173,11 @@ class QAgent:
                  steps: int = 1000,
                  directory: str = '\Trained_Agents') -> list[float]:
         """
-        method to train the agent.
+        Method to train the agent.
         this method outputs a list of float numbers <- returns
         
         :param env: The environment to train the agent in.
-        :param batch_size: The number of experiences to replay.
+        :param batch_size: The size of the batch to replay in an episode.
         :param episodes: The number of episodes to train the agent for.
         :param directory: The directory to save the trained agent in.
         """
